@@ -1,0 +1,1190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SAR AI Code Generator Pro</title>
+    <!-- Tailwind CSS for styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+    <!-- CodeMirror for code editing -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/theme/monokai.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/xml/xml.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/javascript/javascript.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/css/css.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/python/python.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/clike/clike.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/php/php.min.js"></script>
+    <!-- Google Fonts: Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Custom Styles -->
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #111827;
+        }
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #1f2937;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #4b5563;
+            border-radius: 10px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #6b7280;
+        }
+        .glowing-border {
+            border: 2px solid transparent;
+            transition: border-color 0.3s ease, box-shadow 0.3s ease;
+        }
+        .glowing-border:focus-within {
+            border-color: #3b82f6;
+            box-shadow: 0 0 10px #3b82f660;
+        }
+        /* Splash screen animation */
+        @keyframes fadeOut {
+            from { opacity: 1; }
+            to { opacity: 0; visibility: hidden; }
+        }
+        /* Full preview modal */
+        .full-preview-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.9);
+            z-index: 50;
+            display: flex;
+            flex-direction: column;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s ease, visibility 0.3s ease;
+        }
+        .full-preview-modal.active {
+            opacity: 1;
+            visibility: visible;
+        }
+        /* Menu dropdown */
+        .menu-dropdown {
+            opacity: 0;
+            visibility: hidden;
+            transform: translateY(-10px);
+            transition: opacity 0.3s ease, visibility 0.3s ease, transform 0.3s ease;
+        }
+        .menu-dropdown.active {
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(0);
+        }
+        /* History item hover effect */
+        .history-item:hover {
+            background-color: #374151;
+        }
+        /* CodeMirror custom styling */
+        .CodeMirror {
+            height: 100%;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+        /* Compiler tabs */
+        .compiler-tab {
+            transition: all 0.3s ease;
+        }
+        .compiler-tab.active {
+            background-color: #374151;
+            border-color: #3b82f6;
+        }
+        /* Loading animation */
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        .pulse-animation {
+            animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+    </style>
+</head>
+<body class="text-gray-200 antialiased">
+
+    <!-- Splash Screen -->
+    <div id="splashScreen" class="fixed inset-0 z-50 flex flex-col items-center justify-center bg-gradient-to-br from-gray-900 to-gray-800">
+        <div class="text-center">
+            <div class="w-24 h-24 mx-auto mb-6 rounded-full bg-gradient-to-r from-blue-500 to-purple-600 flex items-center justify-center pulse-animation">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
+                </svg>
+            </div>
+            <h1 class="text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-500 mb-2">
+                SAR AI Code Generator Pro
+            </h1>
+            <p class="text-gray-400 mb-6">Powered by SHAHED</p>
+            <div class="mt-8">
+                <div class="w-64 h-1 bg-gray-700 rounded-full overflow-hidden">
+                    <div id="loadingBar" class="h-full bg-gradient-to-r from-blue-500 to-purple-600 rounded-full transition-all duration-300" style="width: 0%"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main App -->
+    <div id="mainApp" class="hidden">
+        <!-- Header with Menu -->
+        <header class="bg-gray-800 border-b border-gray-700 sticky top-0 z-40">
+            <div class="container mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+                <div class="flex items-center justify-between h-16">
+                    <div class="flex items-center">
+                        <div class="flex-shrink-0 flex items-center">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
+                            </svg>
+                            <span class="ml-2 text-xl font-bold text-white">SAR AI Code Generator Pro</span>
+                        </div>
+                    </div>
+                    <div class="flex items-center space-x-4">
+                        <!-- Download Button -->
+                        <button id="downloadBtn" class="text-gray-300 hover:text-white transition-colors duration-200" disabled title="Download Code">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                            </svg>
+                        </button>
+                        
+                        <!-- Full Preview Button -->
+                        <button id="fullPreviewBtn" class="text-gray-300 hover:text-white transition-colors duration-200" disabled title="Full Preview">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                            </svg>
+                        </button>
+                        
+                        <!-- Menu Button -->
+                        <div class="relative">
+                            <button id="menuBtn" class="text-gray-300 hover:text-white transition-colors duration-200">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+                                </svg>
+                            </button>
+                            <div id="menuDropdown" class="menu-dropdown absolute right-0 mt-2 w-56 bg-gray-800 border border-gray-700 rounded-lg shadow-lg py-1 z-50">
+                                <a href="#" id="historyBtn" class="block px-4 py-2 text-sm text-gray-300 hover:bg-gray-700 hover:text-white flex items-center">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                    </svg>
+                                    History
+                                </a>
+                                <a href="#" id="compilerBtn" class="block px-4 py-2 text-sm text-gray-300 hover:bg-gray-700 hover:text-white flex items-center">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
+                                    </svg>
+                                    Code Compiler
+                                </a>
+                                <a href="#" id="privacyPolicyBtn" class="block px-4 py-2 text-sm text-gray-300 hover:bg-gray-700 hover:text-white">Privacy Policy</a>
+                                <a href="#" id="developerInfoBtn" class="block px-4 py-2 text-sm text-gray-300 hover:bg-gray-700 hover:text-white">Developer Information</a>
+                                <a href="#" id="aboutAIBtn" class="block px-4 py-2 text-sm text-gray-300 hover:bg-gray-700 hover:text-white">About AI</a>
+                                <a href="#" id="firebaseInfoBtn" class="block px-4 py-2 text-sm text-gray-300 hover:bg-gray-700 hover:text-white">Database by Firebase</a>
+                                <a href="#" id="googleInfoBtn" class="block px-4 py-2 text-sm text-gray-300 hover:bg-gray-700 hover:text-white">Database by Google</a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <div class="container mx-auto max-w-7xl p-4 sm:p-6 lg:p-8">
+            <main class="grid grid-cols-1 xl:grid-cols-2 gap-8">
+                <!-- Left Side: Controls -->
+                <div class="flex flex-col gap-6">
+                    <!-- Prompt Input -->
+                    <div class="flex flex-col gap-2">
+                        <label for="prompt" class="font-medium text-gray-300">Your Prompt</label>
+                        <textarea id="prompt" rows="6" class="glowing-border bg-gray-800 border-gray-700 rounded-lg p-3 text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-200" placeholder="e.g., Create a responsive navigation bar with a logo"></textarea>
+                    </div>
+
+                    <!-- Language Selection -->
+                    <div class="flex flex-col gap-2">
+                        <label for="language" class="font-medium text-gray-300">Programming Language</label>
+                        <select id="language" class="glowing-border bg-gray-800 border-gray-700 rounded-lg p-3 text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-200 appearance-none">
+                            <option value="HTML">HTML (with CSS & JS)</option>
+                            <option value="JavaScript">JavaScript</option>
+                            <option value="Python">Python</option>
+                            <option value="Java">Java</option>
+                            <option value="CSharp">C#</option>
+                            <option value="PHP">PHP</option>
+                            <option value="Go">Go</option>
+                            <option value="Rust">Rust</option>
+                            <option value="SQL">SQL</option>
+                        </select>
+                    </div>
+
+                    <!-- Generate Button -->
+                    <button id="generateBtn" class="w-full bg-gradient-to-r from-blue-500 to-purple-600 text-white font-semibold py-3 rounded-lg hover:from-blue-600 hover:to-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-900 focus:ring-blue-500 transition-all duration-300 transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed">
+                        <span id="btn-text">Generate Code</span>
+                        <span id="btn-loader" class="hidden">
+                            <svg class="animate-spin h-5 w-5 mx-auto" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                        </span>
+                    </button>
+
+                    <!-- History Section -->
+                    <div id="historySection" class="hidden bg-gray-800 rounded-lg p-4">
+                        <div class="flex justify-between items-center mb-3">
+                            <h3 class="font-medium text-gray-300">Generation History</h3>
+                            <button id="clearHistoryBtn" class="text-xs text-red-400 hover:text-red-300 transition-colors">Clear All</button>
+                        </div>
+                        <div id="historyList" class="max-h-60 overflow-y-auto space-y-2">
+                            <!-- History items will be populated here -->
+                        </div>
+                    </div>
+
+                    <!-- Code Compiler Section -->
+                    <div id="compilerSection" class="hidden bg-gray-800 rounded-lg overflow-hidden">
+                        <div class="flex border-b border-gray-700">
+                            <button id="htmlTab" class="compiler-tab flex-1 px-4 py-2 text-sm font-medium border-b-2 border-blue-500 text-white active">HTML</button>
+                            <button id="cssTab" class="compiler-tab flex-1 px-4 py-2 text-sm font-medium border-b-2 border-transparent text-gray-400 hover:text-white">CSS</button>
+                            <button id="jsTab" class="compiler-tab flex-1 px-4 py-2 text-sm font-medium border-b-2 border-transparent text-gray-400 hover:text-white">JavaScript</button>
+                        </div>
+                        <div class="p-4">
+                            <div id="htmlEditor" class="h-48 mb-4 border border-gray-700 rounded overflow-hidden"></div>
+                            <div id="cssEditor" class="h-32 mb-4 border border-gray-700 rounded overflow-hidden hidden"></div>
+                            <div id="jsEditor" class="h-32 mb-4 border border-gray-700 rounded overflow-hidden hidden"></div>
+                            <button id="runCompilerBtn" class="w-full bg-green-600 text-white font-semibold py-2 rounded-lg hover:bg-green-700 transition-colors">
+                                Run Code
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right Side: Output -->
+                <div class="bg-gray-800 rounded-lg overflow-hidden flex flex-col min-h-[500px]">
+                    <!-- Tabs -->
+                    <div class="flex border-b border-gray-700 bg-gray-800/50">
+                        <button id="codeTab" class="px-4 py-2 text-sm font-medium border-b-2 border-blue-500 text-white">Code</button>
+                        <button id="previewTab" class="px-4 py-2 text-sm font-medium border-b-2 border-transparent text-gray-400 hover:bg-gray-700/50 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed" disabled>Preview</button>
+                        <button id="compilerOutputTab" class="px-4 py-2 text-sm font-medium border-b-2 border-transparent text-gray-400 hover:bg-gray-700/50 hover:text-white">Compiler Output</button>
+                        <div class="flex-grow"></div>
+                        <button id="copyBtn" class="px-4 py-2 text-sm font-medium text-gray-400 hover:bg-gray-700/50 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed" disabled title="Copy code">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-clipboard" viewBox="0 0 16 16">
+                              <path d="M4 1.5H3a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2v-8a2 2 0 0 0-2-2h-1v1h1a1 1 0 0 1 1 1v8a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1v-8a1 1 0 0 1 1-1h1v-1z"/>
+                              <path d="M9.5 1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-3a.5.5 0 0 1-.5-.5v-1a.5.5 0 0 1 .5-.5h3zm-3-1A1.5 1.5 0 0 0 5 1.5v1A1.5 1.5 0 0 0 6.5 4h3A1.5 1.5 0 0 0 11 2.5v-1A1.5 1.5 0 0 0 9.5 0h-3z"/>
+                            </svg>
+                        </button>
+                    </div>
+                    <!-- Output Area -->
+                    <div id="output-container" class="relative flex-grow p-1 bg-gray-900">
+                        <pre id="codeOutput" class="h-full w-full overflow-y-auto p-4 text-sm"><code class="language-html">Your generated code will appear here...</code></pre>
+                        <iframe id="previewOutput" class="h-full w-full bg-white hidden" sandbox="allow-scripts allow-same-origin"></iframe>
+                        <iframe id="compilerOutput" class="h-full w-full bg-white hidden" sandbox="allow-scripts allow-same-origin"></iframe>
+                         <!-- Toast Notification for Copy -->
+                        <div id="toast" class="absolute bottom-4 right-4 bg-green-500 text-white px-4 py-2 rounded-lg shadow-lg opacity-0 transform translate-y-2 transition-all duration-300">
+                            Copied to clipboard!
+                        </div>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <!-- Full Preview Modal -->
+    <div id="fullPreviewModal" class="full-preview-modal">
+        <div class="flex justify-between items-center p-4 bg-gray-800 border-b border-gray-700">
+            <h2 class="text-xl font-bold text-white">Full Preview</h2>
+            <div class="flex space-x-2">
+                <button id="downloadFullPreviewBtn" class="px-3 py-1 bg-blue-600 text-white rounded text-sm hover:bg-blue-700 transition-colors">
+                    Download HTML
+                </button>
+                <button id="closeFullPreviewBtn" class="text-gray-400 hover:text-white">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+            </div>
+        </div>
+        <div class="flex-grow">
+            <iframe id="fullPreviewOutput" class="w-full h-full bg-white" sandbox="allow-scripts allow-same-origin"></iframe>
+        </div>
+    </div>
+
+    <!-- Modals for menu options -->
+    <div id="privacyPolicyModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-70 hidden">
+        <div class="bg-gray-800 rounded-lg max-w-2xl w-full mx-4 max-h-[80vh] overflow-y-auto">
+            <div class="p-6">
+                <h2 class="text-2xl font-bold text-white mb-4">Privacy Policy</h2>
+                <div class="text-gray-300 space-y-4">
+                    <p>This AI Code Generator application respects your privacy. Here's how we handle your data:</p>
+                    <ul class="list-disc pl-5 space-y-2">
+                        <li>Your prompts and generated code are stored securely in Firebase for history and improvement purposes</li>
+                        <li>We do not share your data with third parties without your consent</li>
+                        <li>You can delete your history at any time</li>
+                        <li>We use industry-standard security measures to protect your information</li>
+                    </ul>
+                    <p>For questions about our privacy practices, contact us at privacy@aicodegenerator.com</p>
+                </div>
+                <div class="mt-6 flex justify-end">
+                    <button id="closePrivacyPolicyBtn" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="developerInfoModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-70 hidden">
+        <div class="bg-gray-800 rounded-lg max-w-2xl w-full mx-4 max-h-[80vh] overflow-y-auto">
+            <div class="p-6">
+                <h2 class="text-2xl font-bold text-white mb-4">Developer Information</h2>
+                <div class="text-gray-300 space-y-4">
+                    <p>This AI Code Generator was developed by a team of passionate developers who believe in making coding accessible to everyone.</p>
+                    <p>Our mission is to help developers, students, and coding enthusiasts generate code quickly and efficiently using the power of AI.</p>
+                    <p>We continuously work on improving the application and adding new features based on user feedback.</p>
+                    <p>If you have suggestions or encounter issues, please contact us at support@aicodegenerator.com</p>
+                </div>
+                <div class="mt-6 flex justify-end">
+                    <button id="closeDeveloperInfoBtn" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="aboutAIModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-70 hidden">
+        <div class="bg-gray-800 rounded-lg max-w-2xl w-full mx-4 max-h-[80vh] overflow-y-auto">
+            <div class="p-6">
+                <h2 class="text-2xl font-bold text-white mb-4">About AI</h2>
+                <div class="text-gray-300 space-y-4">
+                    <p>I Won't Tell You</p>
+                    <p>Shahed Has  Made It</p>
+                    <p>While the AI is highly capable, please note:</p>
+                    <ul class="list-disc pl-5 space-y-2">
+                        <li>Generated code should be reviewed and tested before use in production</li>
+                        <li>The AI may occasionally produce incorrect or incomplete code</li>
+                        <li>For complex requirements, you may need to refine your prompt or manually adjust the generated code</li>
+                    </ul>
+                    <p>We're constantly working to improve the accuracy and quality of generated code.</p>
+                </div>
+                <div class="mt-6 flex justify-end">
+                    <button id="closeAboutAIBtn" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="firebaseInfoModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-70 hidden">
+        <div class="bg-gray-800 rounded-lg max-w-2xl w-full mx-4 max-h-[80vh] overflow-y-auto">
+            <div class="p-6">
+                <h2 class="text-2xl font-bold text-white mb-4">Database by Firebase</h2>
+                <div class="text-gray-300 space-y-4">
+                    <p>This application uses Firebase Firestore as its database solution.</p>
+                    <p>Firebase provides:</p>
+                    <ul class="list-disc pl-5 space-y-2">
+                        <li>Real-time data synchronization</li>
+                        <li>Secure and scalable infrastructure</li>
+                        <li>Offline data persistence</li>
+                        <li>Easy integration with other Google services</li>
+                    </ul>
+                    <p>Your generated code history is stored securely in Firebase, allowing you to access your previous work across sessions.</p>
+                    <p>Firebase's security rules ensure that only authorized users can access your data.</p>
+                </div>
+                <div class="mt-6 flex justify-end">
+                    <button id="closeFirebaseInfoBtn" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="googleInfoModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-70 hidden">
+        <div class="bg-gray-800 rounded-lg max-w-2xl w-full mx-4 max-h-[80vh] overflow-y-auto">
+            <div class="p-6">
+                <h2 class="text-2xl font-bold text-white mb-4">Database by Google</h2>
+                <div class="text-gray-300 space-y-4">
+                    <p>This application leverages Google's infrastructure for data storage and processing.</p>
+                    <p>Google Cloud services provide:</p>
+                    <ul class="list-disc pl-5 space-y-2">
+                        <li>High availability and reliability</li>
+                        <li>Global data distribution</li>
+                        <li>Advanced security features</li>
+                        <li>Seamless integration with other Google AI services</li>
+                    </ul>
+                    <p>By using Google's database solutions, we ensure that your data is handled with enterprise-grade security and performance.</p>
+                    <p>All data is encrypted both in transit and at rest, following Google's stringent security protocols.</p>
+                </div>
+                <div class="mt-6 flex justify-end">
+                    <button id="closeGoogleInfoBtn" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Firebase Configuration
+        const firebaseConfig = {
+            apiKey: "your-firebase-api-key",
+            authDomain: "your-project.firebaseapp.com",
+            projectId: "your-project-id",
+            storageBucket: "your-project.appspot.com",
+            messagingSenderId: "123456789",
+            appId: "your-app-id"
+        };
+
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+
+        // DOM Element References
+        const splashScreen = document.getElementById('splashScreen');
+        const mainApp = document.getElementById('mainApp');
+        const loadingBar = document.getElementById('loadingBar');
+        const promptEl = document.getElementById('prompt');
+        const languageEl = document.getElementById('language');
+        const generateBtn = document.getElementById('generateBtn');
+        const btnText = document.getElementById('btn-text');
+        const btnLoader = document.getElementById('btn-loader');
+        const codeOutputEl = document.getElementById('codeOutput');
+        const previewOutputEl = document.getElementById('previewOutput');
+        const compilerOutputEl = document.getElementById('compilerOutput');
+        const fullPreviewOutputEl = document.getElementById('fullPreviewOutput');
+        const codeTab = document.getElementById('codeTab');
+        const previewTab = document.getElementById('previewTab');
+        const compilerOutputTab = document.getElementById('compilerOutputTab');
+        const copyBtn = document.getElementById('copyBtn');
+        const toastEl = document.getElementById('toast');
+        const historyBtn = document.getElementById('historyBtn');
+        const historySection = document.getElementById('historySection');
+        const historyList = document.getElementById('historyList');
+        const clearHistoryBtn = document.getElementById('clearHistoryBtn');
+        const compilerBtn = document.getElementById('compilerBtn');
+        const compilerSection = document.getElementById('compilerSection');
+        const htmlTab = document.getElementById('htmlTab');
+        const cssTab = document.getElementById('cssTab');
+        const jsTab = document.getElementById('jsTab');
+        const htmlEditorEl = document.getElementById('htmlEditor');
+        const cssEditorEl = document.getElementById('cssEditor');
+        const jsEditorEl = document.getElementById('jsEditor');
+        const runCompilerBtn = document.getElementById('runCompilerBtn');
+        const fullPreviewBtn = document.getElementById('fullPreviewBtn');
+        const fullPreviewModal = document.getElementById('fullPreviewModal');
+        const closeFullPreviewBtn = document.getElementById('closeFullPreviewBtn');
+        const downloadFullPreviewBtn = document.getElementById('downloadFullPreviewBtn');
+        const downloadBtn = document.getElementById('downloadBtn');
+        const menuBtn = document.getElementById('menuBtn');
+        const menuDropdown = document.getElementById('menuDropdown');
+        const privacyPolicyBtn = document.getElementById('privacyPolicyBtn');
+        const developerInfoBtn = document.getElementById('developerInfoBtn');
+        const aboutAIBtn = document.getElementById('aboutAIBtn');
+        const firebaseInfoBtn = document.getElementById('firebaseInfoBtn');
+        const googleInfoBtn = document.getElementById('googleInfoBtn');
+        const privacyPolicyModal = document.getElementById('privacyPolicyModal');
+        const developerInfoModal = document.getElementById('developerInfoModal');
+        const aboutAIModal = document.getElementById('aboutAIModal');
+        const firebaseInfoModal = document.getElementById('firebaseInfoModal');
+        const googleInfoModal = document.getElementById('googleInfoModal');
+        const closePrivacyPolicyBtn = document.getElementById('closePrivacyPolicyBtn');
+        const closeDeveloperInfoBtn = document.getElementById('closeDeveloperInfoBtn');
+        const closeAboutAIBtn = document.getElementById('closeAboutAIBtn');
+        const closeFirebaseInfoBtn = document.getElementById('closeFirebaseInfoBtn');
+        const closeGoogleInfoBtn = document.getElementById('closeGoogleInfoBtn');
+
+        // Your provided API Key.
+        const apiKey = "AIzaSyBr6vIGrHldAfUcoRgprMyRRsRnLunXvAE";
+        const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
+
+        let generatedCode = '';
+        let generationHistory = [];
+        let htmlEditor, cssEditor, jsEditor;
+
+        // Initialize CodeMirror Editors
+        function initializeEditors() {
+            htmlEditor = CodeMirror(htmlEditorEl, {
+                mode: "htmlmixed",
+                theme: "monokai",
+                lineNumbers: true,
+                autoCloseTags: true,
+                matchBrackets: true,
+                value: `<!DOCTYPE html>
+<html>
+<head>
+    <title>My Page</title>
+</head>
+<body>
+    <h1>Hello World!</h1>
+</body>
+</html>`
+            });
+
+            cssEditor = CodeMirror(cssEditorEl, {
+                mode: "css",
+                theme: "monokai",
+                lineNumbers: true,
+                value: `body {
+    font-family: Arial, sans-serif;
+    margin: 0;
+    padding: 20px;
+    background-color: #f0f0f0;
+}
+
+h1 {
+    color: #333;
+}`
+            });
+
+            jsEditor = CodeMirror(jsEditorEl, {
+                mode: "javascript",
+                theme: "monokai",
+                lineNumbers: true,
+                value: `console.log('Hello from JavaScript!');
+
+document.addEventListener('DOMContentLoaded', function() {
+    const h1 = document.querySelector('h1');
+    if (h1) {
+        h1.addEventListener('click', function() {
+            this.style.color = this.style.color === 'red' ? '#333' : 'red';
+        });
+    }
+});`
+            });
+        }
+
+        // --- Event Listeners ---
+
+        // Generate button click
+        generateBtn.addEventListener('click', handleGenerateCode);
+
+        // Language change to manage preview tab state
+        languageEl.addEventListener('change', () => {
+            if (languageEl.value === 'HTML') {
+                if(generatedCode.trim() !== ''){
+                   previewTab.disabled = false;
+                   fullPreviewBtn.disabled = false;
+                   downloadBtn.disabled = false;
+                }
+            } else {
+                previewTab.disabled = true;
+                fullPreviewBtn.disabled = true;
+                // If not HTML, always switch back to code view
+                showView('code');
+            }
+        });
+
+        // Tab switching
+        codeTab.addEventListener('click', () => showView('code'));
+        previewTab.addEventListener('click', () => showView('preview'));
+        compilerOutputTab.addEventListener('click', () => showView('compiler'));
+        
+        // Copy button click
+        copyBtn.addEventListener('click', handleCopyCode);
+
+        // History button click
+        historyBtn.addEventListener('click', toggleHistory);
+
+        // Clear history button click
+        clearHistoryBtn.addEventListener('click', clearHistory);
+
+        // Compiler button click
+        compilerBtn.addEventListener('click', toggleCompiler);
+
+        // Compiler tabs
+        htmlTab.addEventListener('click', () => showCompilerTab('html'));
+        cssTab.addEventListener('click', () => showCompilerTab('css'));
+        jsTab.addEventListener('click', () => showCompilerTab('js'));
+
+        // Run compiler button
+        runCompilerBtn.addEventListener('click', runCompiler);
+
+        // Full preview button click
+        fullPreviewBtn.addEventListener('click', showFullPreview);
+        closeFullPreviewBtn.addEventListener('click', hideFullPreview);
+        downloadFullPreviewBtn.addEventListener('click', downloadFullPreview);
+
+        // Download button click
+        downloadBtn.addEventListener('click', downloadCode);
+
+        // Menu button click
+        menuBtn.addEventListener('click', toggleMenu);
+
+        // Menu option clicks
+        privacyPolicyBtn.addEventListener('click', () => showModal(privacyPolicyModal));
+        developerInfoBtn.addEventListener('click', () => showModal(developerInfoModal));
+        aboutAIBtn.addEventListener('click', () => showModal(aboutAIModal));
+        firebaseInfoBtn.addEventListener('click', () => showModal(firebaseInfoModal));
+        googleInfoBtn.addEventListener('click', () => showModal(googleInfoModal));
+
+        // Close modal buttons
+        closePrivacyPolicyBtn.addEventListener('click', () => hideModal(privacyPolicyModal));
+        closeDeveloperInfoBtn.addEventListener('click', () => hideModal(developerInfoModal));
+        closeAboutAIBtn.addEventListener('click', () => hideModal(aboutAIModal));
+        closeFirebaseInfoBtn.addEventListener('click', () => hideModal(firebaseInfoModal));
+        closeGoogleInfoBtn.addEventListener('click', () => hideModal(googleInfoModal));
+
+        // Close dropdown when clicking outside
+        document.addEventListener('click', (e) => {
+            if (!menuBtn.contains(e.target) && !menuDropdown.contains(e.target)) {
+                menuDropdown.classList.remove('active');
+            }
+        });
+
+        // Close modals when clicking outside
+        document.addEventListener('click', (e) => {
+            if (e.target === privacyPolicyModal) hideModal(privacyPolicyModal);
+            if (e.target === developerInfoModal) hideModal(developerInfoModal);
+            if (e.target === aboutAIModal) hideModal(aboutAIModal);
+            if (e.target === firebaseInfoModal) hideModal(firebaseInfoModal);
+            if (e.target === googleInfoModal) hideModal(googleInfoModal);
+            if (e.target === fullPreviewModal) hideFullPreview();
+        });
+
+        // Handle escape key for modals
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                hideFullPreview();
+                hideModal(privacyPolicyModal);
+                hideModal(developerInfoModal);
+                hideModal(aboutAIModal);
+                hideModal(firebaseInfoModal);
+                hideModal(googleInfoModal);
+            }
+        });
+
+        // --- Core Functions ---
+
+        /**
+         * Handles the click event for the generate button.
+         * Fetches and displays code from the Gemini API.
+         */
+        async function handleGenerateCode() {
+            const userPrompt = promptEl.value.trim();
+            const selectedLanguage = languageEl.value;
+
+            if (!userPrompt) {
+                showNotification('Please enter a prompt.', 'error');
+                return;
+            }
+
+            setLoading(true);
+            codeOutputEl.textContent = 'Generating code, please wait...';
+            previewTab.disabled = true;
+            fullPreviewBtn.disabled = true;
+            downloadBtn.disabled = true;
+            copyBtn.disabled = true;
+
+            try {
+                // Construct a more specific prompt for the model
+                const modelPrompt = `
+                    You are an expert code generator.
+                    Generate a complete, runnable, and self-contained code snippet in ${selectedLanguage}.
+                    The code should directly address the following request: "${userPrompt}".
+                    Only output the raw code, with no explanations, comments about the code, or markdown formatting like \`\`\`${selectedLanguage.toLowerCase()}\`\`\`.
+                    Make sure the code is well-formatted and follows best practices.
+                `;
+                
+                const payload = {
+                    contents: [{ parts: [{ text: modelPrompt }] }]
+                };
+
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.error?.message || `HTTP error! status: ${response.status}`);
+                }
+
+                const result = await response.json();
+                const candidate = result.candidates?.[0];
+
+                if (candidate && candidate.content?.parts?.[0]?.text) {
+                    generatedCode = candidate.content.parts[0].text;
+                    codeOutputEl.textContent = generatedCode;
+                    copyBtn.disabled = false;
+                    downloadBtn.disabled = false;
+                    
+                    if (selectedLanguage === 'HTML') {
+                        previewTab.disabled = false;
+                        fullPreviewBtn.disabled = false;
+                    }
+
+                    // Save to history and Firebase
+                    saveToHistory(userPrompt, selectedLanguage, generatedCode);
+                    showNotification('Code generated successfully!', 'success');
+                } else {
+                    throw new Error('No valid content received from API.');
+                }
+
+            } catch (error) {
+                console.error("API Error:", error);
+                codeOutputEl.textContent = `Error: ${error.message}\n\nPlease check your API key and network connection. Also, the model might be experiencing high traffic.`;
+                showNotification('Failed to generate code. Please try again.', 'error');
+            } finally {
+                setLoading(false);
+            }
+        }
+        
+        /**
+         * Copies the generated code to the clipboard.
+         */
+        function handleCopyCode() {
+            if (!generatedCode) return;
+            const textarea = document.createElement('textarea');
+            textarea.value = generatedCode;
+            document.body.appendChild(textarea);
+            textarea.select();
+            try {
+                document.execCommand('copy');
+                showToast();
+            } catch (err) {
+                console.error('Failed to copy text: ', err);
+                showNotification('Failed to copy code. Please copy it manually.', 'error');
+            }
+            document.body.removeChild(textarea);
+        }
+
+        /**
+         * Downloads the generated code as a file
+         */
+        function downloadCode() {
+            if (!generatedCode) return;
+            
+            const language = languageEl.value;
+            let extension = '';
+            let mimeType = 'text/plain';
+            
+            switch(language) {
+                case 'HTML':
+                    extension = '.html';
+                    mimeType = 'text/html';
+                    break;
+                case 'JavaScript':
+                    extension = '.js';
+                    mimeType = 'application/javascript';
+                    break;
+                case 'Python':
+                    extension = '.py';
+                    break;
+                case 'Java':
+                    extension = '.java';
+                    break;
+                case 'CSharp':
+                    extension = '.cs';
+                    break;
+                case 'PHP':
+                    extension = '.php';
+                    mimeType = 'application/x-httpd-php';
+                    break;
+                case 'Go':
+                    extension = '.go';
+                    break;
+                case 'Rust':
+                    extension = '.rs';
+                    break;
+                case 'SQL':
+                    extension = '.sql';
+                    break;
+                default:
+                    extension = '.txt';
+            }
+            
+            const blob = new Blob([generatedCode], { type: mimeType });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `generated_code${extension}`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            showNotification('Code downloaded successfully!', 'success');
+        }
+
+        /**
+         * Downloads the full preview HTML
+         */
+        function downloadFullPreview() {
+            if (!generatedCode) return;
+            
+            const blob = new Blob([generatedCode], { type: 'text/html' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'full_preview.html';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            showNotification('HTML file downloaded successfully!', 'success');
+        }
+
+        /**
+         * Saves the generated code to history and Firebase
+         */
+        async function saveToHistory(prompt, language, code) {
+            const historyItem = {
+                id: Date.now(),
+                prompt,
+                language,
+                code,
+                timestamp: new Date().toISOString()
+            };
+
+            generationHistory.unshift(historyItem);
+            
+            // Keep only the last 10 items
+            if (generationHistory.length > 10) {
+                generationHistory = generationHistory.slice(0, 10);
+            }
+
+            // Update UI
+            updateHistoryUI();
+
+            // Save to Firebase
+            try {
+                await db.collection('generationHistory').add(historyItem);
+            } catch (error) {
+                console.error('Error saving to Firebase:', error);
+            }
+        }
+
+        /**
+         * Updates the history UI
+         */
+        function updateHistoryUI() {
+            historyList.innerHTML = '';
+            
+            if (generationHistory.length === 0) {
+                historyList.innerHTML = '<p class="text-gray-400 text-center py-4">No history yet</p>';
+                return;
+            }
+            
+            generationHistory.forEach(item => {
+                const historyItemEl = document.createElement('div');
+                historyItemEl.className = 'history-item bg-gray-700 rounded p-3 cursor-pointer transition-colors';
+                historyItemEl.innerHTML = `
+                    <div class="flex justify-between items-start">
+                        <div class="flex-1">
+                            <p class="text-sm font-medium text-white truncate">${item.prompt}</p>
+                            <div class="flex items-center mt-1 text-xs text-gray-400">
+                                <span class="bg-blue-500 text-white px-2 py-0.5 rounded mr-2">${item.language}</span>
+                                <span>${new Date(item.timestamp).toLocaleString()}</span>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                
+                historyItemEl.addEventListener('click', () => {
+                    loadHistoryItem(item);
+                });
+                
+                historyList.appendChild(historyItemEl);
+            });
+        }
+
+        /**
+         * Loads a history item into the editor
+         */
+        function loadHistoryItem(item) {
+            promptEl.value = item.prompt;
+            languageEl.value = item.language;
+            generatedCode = item.code;
+            codeOutputEl.textContent = item.code;
+            copyBtn.disabled = false;
+            downloadBtn.disabled = false;
+            
+            if (item.language === 'HTML') {
+                previewTab.disabled = false;
+                fullPreviewBtn.disabled = false;
+            } else {
+                previewTab.disabled = true;
+                fullPreviewBtn.disabled = true;
+                showView('code');
+            }
+            
+            // Hide history section
+            historySection.classList.add('hidden');
+            menuDropdown.classList.remove('active');
+            showNotification('History item loaded!', 'success');
+        }
+
+        /**
+         * Clears the history
+         */
+        async function clearHistory() {
+            if (confirm('Are you sure you want to clear all history?')) {
+                generationHistory = [];
+                updateHistoryUI();
+                
+                // Clear from Firebase
+                try {
+                    const snapshot = await db.collection('generationHistory').get();
+                    snapshot.forEach(doc => {
+                        db.collection('generationHistory').doc(doc.id).delete();
+                    });
+                    showNotification('History cleared successfully!', 'success');
+                } catch (error) {
+                    console.error('Error clearing history from Firebase:', error);
+                    showNotification('Error clearing history', 'error');
+                }
+            }
+        }
+
+        /**
+         * Toggles the history section visibility
+         */
+        function toggleHistory() {
+            historySection.classList.toggle('hidden');
+            compilerSection.classList.add('hidden');
+            menuDropdown.classList.remove('active');
+            
+            // Load history from Firebase if needed
+            if (!historySection.classList.contains('hidden') && generationHistory.length === 0) {
+                loadHistoryFromFirebase();
+            }
+        }
+
+        /**
+         * Toggles the compiler section visibility
+         */
+        function toggleCompiler() {
+            compilerSection.classList.toggle('hidden');
+            historySection.classList.add('hidden');
+            menuDropdown.classList.remove('active');
+            
+            if (!compilerSection.classList.contains('hidden')) {
+                showCompilerTab('html');
+            }
+        }
+
+        /**
+         * Shows the specified compiler tab
+         */
+        function showCompilerTab(tab) {
+            // Reset all tabs
+            htmlTab.classList.remove('active', 'border-blue-500', 'text-white');
+            cssTab.classList.remove('active', 'border-blue-500', 'text-white');
+            jsTab.classList.remove('active', 'border-blue-500', 'text-white');
+            
+            htmlEditorEl.classList.add('hidden');
+            cssEditorEl.classList.add('hidden');
+            jsEditorEl.classList.add('hidden');
+            
+            // Activate selected tab
+            if (tab === 'html') {
+                htmlTab.classList.add('active', 'border-blue-500', 'text-white');
+                htmlEditorEl.classList.remove('hidden');
+            } else if (tab === 'css') {
+                cssTab.classList.add('active', 'border-blue-500', 'text-white');
+                cssEditorEl.classList.remove('hidden');
+            } else if (tab === 'js') {
+                jsTab.classList.add('active', 'border-blue-500', 'text-white');
+                jsEditorEl.classList.remove('hidden');
+            }
+        }
+
+        /**
+         * Runs the compiler with the current code
+         */
+        function runCompiler() {
+            const htmlCode = htmlEditor.getValue();
+            const cssCode = cssEditor.getValue();
+            const jsCode = jsEditor.getValue();
+            
+            // Combine all code into a single HTML document
+            const fullHtml = `
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Compiler Output</title>
+    <style>${cssCode}</style>
+</head>
+<body>
+    ${htmlCode}
+    <script>${jsCode}<\/script>
+</body>
+</html>`;
+            
+            // Show compiler output
+            showView('compiler');
+            compilerOutputEl.srcdoc = fullHtml;
+            showNotification('Code executed successfully!', 'success');
+        }
+
+        /**
+         * Loads history from Firebase
+         */
+        async function loadHistoryFromFirebase() {
+            try {
+                const snapshot = await db.collection('generationHistory')
+                    .orderBy('timestamp', 'desc')
+                    .limit(10)
+                    .get();
+                
+                generationHistory = [];
+                snapshot.forEach(doc => {
+                    generationHistory.push(doc.data());
+                });
+                
+                updateHistoryUI();
+            } catch (error) {
+                console.error('Error loading history from Firebase:', error);
+            }
+        }
+
+        /**
+         * Shows the full preview modal
+         */
+        function showFullPreview() {
+            if (languageEl.value !== 'HTML') return;
+            
+            // Render the HTML in the full preview iframe
+            fullPreviewOutputEl.srcdoc = generatedCode;
+            fullPreviewModal.classList.add('active');
+        }
+
+        /**
+         * Hides the full preview modal
+         */
+        function hideFullPreview() {
+            fullPreviewModal.classList.remove('active');
+        }
+
+        /**
+         * Shows the specified view
+         */
+        function showView(view) {
+            // Hide all views
+            codeOutputEl.classList.add('hidden');
+            previewOutputEl.classList.add('hidden');
+            compilerOutputEl.classList.add('hidden');
+            
+            // Reset all tabs
+            codeTab.classList.remove('border-blue-500', 'text-white');
+            previewTab.classList.remove('border-blue-500', 'text-white');
+            compilerOutputTab.classList.remove('border-blue-500', 'text-white');
+            
+            codeTab.classList.add('border-transparent', 'text-gray-400');
+            previewTab.classList.add('border-transparent', 'text-gray-400');
+            compilerOutputTab.classList.add('border-transparent', 'text-gray-400');
+            
+            // Show selected view
+            if (view === 'code') {
+                codeOutputEl.classList.remove('hidden');
+                codeTab.classList.add('border-blue-500', 'text-white');
+                codeTab.classList.remove('border-transparent', 'text-gray-400');
+            } else if (view === 'preview') {
+                if (languageEl.value === 'HTML') {
+                    previewOutputEl.srcdoc = generatedCode;
+                }
+                previewOutputEl.classList.remove('hidden');
+                previewTab.classList.add('border-blue-500', 'text-white');
+                previewTab.classList.remove('border-transparent', 'text-gray-400');
+            } else if (view === 'compiler') {
+                compilerOutputEl.classList.remove('hidden');
+                compilerOutputTab.classList.add('border-blue-500', 'text-white');
+                compilerOutputTab.classList.remove('border-transparent', 'text-gray-400');
+            }
+        }
+
+        /**
+         * Toggles the menu dropdown
+         */
+        function toggleMenu() {
+            menuDropdown.classList.toggle('active');
+        }
+
+        /**
+         * Shows a modal
+         */
+        function showModal(modal) {
+            modal.classList.remove('hidden');
+            menuDropdown.classList.remove('active');
+        }
+
+        /**
+         * Hides a modal
+         */
+        function hideModal(modal) {
+            modal.classList.add('hidden');
+        }
+
+        // --- UI Helper Functions ---
+
+        function setLoading(isLoading) {
+            generateBtn.disabled = isLoading;
+            if (isLoading) {
+                btnText.classList.add('hidden');
+                btnLoader.classList.remove('hidden');
+                generateBtn.classList.add('pulse-animation');
+            } else {
+                btnText.classList.remove('hidden');
+                btnLoader.classList.add('hidden');
+                generateBtn.classList.remove('pulse-animation');
+            }
+        }
+        
+        function showToast() {
+            toastEl.classList.remove('opacity-0', 'translate-y-2');
+            toastEl.classList.add('opacity-100', 'translate-y-0');
+            setTimeout(() => {
+                toastEl.classList.add('opacity-0', 'translate-y-2');
+                toastEl.classList.remove('opacity-100', 'translate-y-0');
+            }, 2000);
+        }
+
+        function showNotification(message, type = 'info') {
+            // Create notification element
+            const notification = document.createElement('div');
+            const bgColor = type === 'error' ? 'bg-red-500' : type === 'success' ? 'bg-green-500' : 'bg-blue-500';
+            notification.className = `fixed top-4 right-4 ${bgColor} text-white px-4 py-2 rounded-lg shadow-lg z-50 transform translate-x-full transition-transform duration-300`;
+            notification.textContent = message;
+            
+            document.body.appendChild(notification);
+            
+            // Animate in
+            setTimeout(() => {
+                notification.classList.remove('translate-x-full');
+            }, 100);
+            
+            // Remove after 3 seconds
+            setTimeout(() => {
+                notification.classList.add('translate-x-full');
+                setTimeout(() => {
+                    document.body.removeChild(notification);
+                }, 300);
+            }, 3000);
+        }
+
+        // --- Initialize App ---
+
+        // Simulate loading process
+        setTimeout(() => {
+            let progress = 0;
+            const interval = setInterval(() => {
+                progress += 5;
+                loadingBar.style.width = `${progress}%`;
+                
+                if (progress >= 100) {
+                    clearInterval(interval);
+                    setTimeout(() => {
+                        splashScreen.style.animation = 'fadeOut 0.5s forwards';
+                        setTimeout(() => {
+                            splashScreen.style.display = 'none';
+                            mainApp.classList.remove('hidden');
+                            // Initialize editors after app is loaded
+                            initializeEditors();
+                        }, 500);
+                    }, 300);
+                }
+            }, 100);
+        }, 500);
+    </script>
+</body>
+</html>
